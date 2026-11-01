@@ -1,0 +1,51 @@
+name: Javadoc a GitHub Pages
+
+# Se ejecuta con cada push a la rama main
+on:
+  push:
+    branches: [ main ]
+
+# Permisos necesarios para desplegar en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita despliegues simultáneos
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: generar la documentación Javadoc
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Generar Javadoc
+        run: javadoc -encoding UTF-8 -charset UTF-8 -author -version -d site -sourcepath src -subpackages gestionPersonas
+
+      - name: Empaquetar el HTML generado
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  # Job 2: desplegar en GitHub Pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
